@@ -1,0 +1,8 @@
+{
+  "name": "SS Imóveis",
+  "description": "Sistema de Gestão Imobiliária com motor de cálculo financeiro (SAC/Price) e portal do cliente.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

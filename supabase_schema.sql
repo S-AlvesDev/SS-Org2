@@ -1,0 +1,121 @@
+-- Reestruturação Supabase / PostgreSQL para SS Imóveis
+
+-- 1. Tabela de Users (Staff / Clients Logins)
+CREATE TABLE IF NOT EXISTS public.users (
+    id SERIAL PRIMARY KEY,
+    nome TEXT NOT NULL,
+    email TEXT,
+    matricula TEXT UNIQUE NOT NULL,
+    senha TEXT NOT NULL,
+    role TEXT DEFAULT 'CLIENTE',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
+-- 2. Tabela de Clients
+CREATE TABLE IF NOT EXISTS public.clients (
+    id SERIAL PRIMARY KEY,
+    nome TEXT NOT NULL,
+    email TEXT UNIQUE,
+    telefone TEXT,
+    matricula TEXT UNIQUE,
+    senha TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
+-- 3. Tabela de Properties
+CREATE TABLE IF NOT EXISTS public.properties (
+    id SERIAL PRIMARY KEY,
+    nome TEXT NOT NULL,
+    descricao TEXT,
+    valor NUMERIC(10, 2) NOT NULL,
+    localizacao TEXT,
+    status TEXT DEFAULT 'DISPONÍVEL',
+    images JSONB DEFAULT '[]'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
+-- 4. Tabela de Contracts
+CREATE TABLE IF NOT EXISTS public.contracts (
+    id SERIAL PRIMARY KEY,
+    client_id INTEGER REFERENCES public.clients(id) ON DELETE CASCADE,
+    property_id INTEGER REFERENCES public.properties(id) ON DELETE CASCADE,
+    valor_imovel NUMERIC(10, 2) NOT NULL,
+    valor_entrada NUMERIC(10, 2) NOT NULL,
+    valor_financiado NUMERIC(10, 2) NOT NULL,
+    taxa_juros NUMERIC(5, 2) NOT NULL,
+    num_parcelas INTEGER NOT NULL,
+    tipo_amortizacao TEXT NOT NULL,
+    data_inicio DATE NOT NULL,
+    status TEXT DEFAULT 'ATIVO',
+    data_contrato TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
+    distrato JSONB,
+    installments JSONB NOT NULL,
+    tipo_contrato TEXT DEFAULT 'VENDA',
+    status_financeiro TEXT DEFAULT 'Em Pagamento'
+);
+
+-- 5. Tabela de Comissoes
+CREATE TABLE IF NOT EXISTS public.comissoes (
+    id SERIAL PRIMARY KEY,
+    contrato_id INTEGER NOT NULL REFERENCES public.contracts(id) ON DELETE CASCADE,
+    cliente_id INTEGER NOT NULL REFERENCES public.clients(id) ON DELETE CASCADE,
+    imovel_id INTEGER NOT NULL REFERENCES public.properties(id) ON DELETE CASCADE,
+    corretor_matricula TEXT NOT NULL,
+    regra_aplicada TEXT NOT NULL,
+    valor_comissao NUMERIC(10, 2) NULL,
+    valor_calculado NUMERIC(10, 2) NULL,
+    valor_personalizado NUMERIC(10, 2) NULL,
+    status TEXT DEFAULT 'PENDENTE', -- PENDENTE, PAGO
+    data_criacao TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
+-- 6. Tabela de Materials (Estoque da Obra)
+CREATE TABLE IF NOT EXISTS public.materials (
+    id SERIAL PRIMARY KEY,
+    nome TEXT NOT NULL,
+    unidade_medida TEXT NOT NULL,
+    qtd_volumes NUMERIC(10, 2) NOT NULL,
+    fator_multiplicador NUMERIC(10, 2) NOT NULL,
+    saldo_unidades NUMERIC(10, 2) NOT NULL,
+    estoque_minimo NUMERIC(10, 2) NOT NULL,
+    categoria TEXT DEFAULT 'Outros',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
+-- 7. Tabela de Material Movements
+CREATE TABLE IF NOT EXISTS public.material_movements (
+    id SERIAL PRIMARY KEY,
+    material_id INTEGER REFERENCES public.materials(id) ON DELETE CASCADE,
+    tipo_operacao TEXT NOT NULL,
+    quantidade NUMERIC(10, 2) NOT NULL,
+    funcionario_matricula TEXT NOT NULL,
+    justificativa TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
+-- 8. Tabela de Update Logs
+CREATE TABLE IF NOT EXISTS public.update_logs (
+    id SERIAL PRIMARY KEY,
+    tipo TEXT NOT NULL,
+    descricao TEXT NOT NULL,
+    contrato_id INTEGER REFERENCES public.contracts(id) ON DELETE CASCADE,
+    taxa_anterior NUMERIC(5, 2),
+    taxa_nova NUMERIC(5, 2),
+    data_atualizacao TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
+-- Seeds Iniciais
+INSERT INTO public.users (nome, matricula, senha, role) 
+VALUES ('Administrador', 'admin', 'admin', 'ADMINISTRADOR') 
+ON CONFLICT (matricula) DO NOTHING;
+
+-- Atualização de Segurança Rápida: Adicionar colunas em tabelas existentes caso o usuário já tivesse as tabelas.
+ALTER TABLE public.contracts ADD COLUMN IF NOT EXISTS tipo_contrato TEXT DEFAULT 'VENDA';
+ALTER TABLE public.contracts ADD COLUMN IF NOT EXISTS status_financeiro TEXT DEFAULT 'Em Pagamento';
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'CLIENTE';
+ALTER TABLE public.materials ADD COLUMN IF NOT EXISTS categoria TEXT DEFAULT 'Outros';
+ALTER TABLE public.comissoes ADD COLUMN IF NOT EXISTS valor_calculado NUMERIC(10, 2) NULL;
+ALTER TABLE public.comissoes ADD COLUMN IF NOT EXISTS valor_personalizado NUMERIC(10, 2) NULL;
+ALTER TABLE public.properties ADD COLUMN IF NOT EXISTS images JSONB DEFAULT '[]'::jsonb;
+
