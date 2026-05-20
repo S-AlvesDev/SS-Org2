@@ -23,7 +23,8 @@ import {
   MessageSquare,
   Activity,
   Package,
-  PackageSearch
+  PackageSearch,
+  Search
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell } from 'recharts';
