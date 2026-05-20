@@ -250,12 +250,14 @@ async function startServer() {
     const { email } = req.body;
     if (!email) return res.status(400).json({ error: 'E-mail obrigatório' });
     
+    const message = `Caso exista uma conta com e-mail ${email} você receberá um e-mail para recuperar sua senha.`;
+
     // check if it's client or user
     const { data: client } = await supabaseServer.from('clients').select('id').eq('email', email).maybeSingle();
     const { data: user } = await supabaseServer.from('users').select('id').eq('matricula', email).maybeSingle(); // For employees email is normally matricula or we don't have it? Wait, users have matricula, but maybe no email.
 
     if (!client && !user) {
-      return res.status(404).json({ error: 'Conta não encontrada.' });
+      return res.json({ message });
     }
 
     const code = Math.floor(100000 + Math.random() * 900000).toString();
@@ -269,9 +271,10 @@ async function startServer() {
           subject: 'Recuperação de Senha',
           html: `<p>Seu código para recuperar a senha é: <strong>${code}</strong></p><p>Ele expira em 15 minutos.</p>`
       });
-      res.json({ message: 'Código enviado por e-mail.' });
+      res.json({ message });
     } catch(e) {
-      res.status(500).json({ error: 'Erro ao enviar e-mail de recuperação.' });
+      console.error('[Mail Error]', e);
+      res.json({ message });
     }
   });
 

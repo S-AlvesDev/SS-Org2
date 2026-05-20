@@ -401,7 +401,7 @@ export default function App() {
                 </div>
             </div>
             <h1 className="text-2xl font-bold tracking-tight">SS IMÓVEIS</h1>
-            <p className="text-blue-200 text-sm opacity-80">Sistema de Gestão Residencial</p>
+            <p className="text-blue-200 text-sm opacity-80">Sistema de Gestão Imobiliário</p>
           </div>
           
           <form onSubmit={(e) => {
@@ -416,6 +416,7 @@ export default function App() {
                       }).then(async r => {
                          const d = await r.json();
                          if (!r.ok) throw new Error(d.error || 'Erro.');
+                         alert(d.message);
                          setRecoveryStep(2);
                       }).catch(err => setLoginError(err.message));
                   } else {
@@ -588,9 +589,6 @@ export default function App() {
                 </div>
             )}
 
-            <div className="text-center text-xs text-gray-400 mt-4">
-                Inspirado pela eficiência e organização do SUAP
-            </div>
           </form>
         </motion.div>
       </div>
