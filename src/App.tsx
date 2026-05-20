@@ -121,6 +121,23 @@ export default function App() {
   
   const [isRegistering, setIsRegistering] = useState(false);
   const [registerForm, setRegisterForm] = useState({ nome: '', email: '', telefone: '', senha: '' });
+
+  // Use useEffect to check localStorage on mount
+  useEffect(() => {
+    const savedUser = localStorage.getItem('user');
+    const savedToken = localStorage.getItem('token');
+    if (savedUser && savedToken) {
+      setUser(JSON.parse(savedUser));
+      setToken(savedToken);
+    }
+  }, []);
+
+  const handleLogout = () => {
+    setUser(null);
+    setToken('');
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
+  };
   const [isVerifyingEmail, setIsVerifyingEmail] = useState(false);
   const [isRecovering, setIsRecovering] = useState(false);
   const [recoveryStep, setRecoveryStep] = useState(1);
@@ -202,6 +219,8 @@ export default function App() {
       if (res.ok) {
         setUser(body.user);
         setToken(body.token);
+        localStorage.setItem('user', JSON.stringify(body.user));
+        localStorage.setItem('token', body.token);
         setLoginError('');
       } else {
         setLoginError(body.details || body.error || 'Matrícula ou senha incorretos.');
@@ -652,7 +671,7 @@ export default function App() {
           </>
         )}
 
-        <button onClick={() => setUser(null)} className="w-full flex items-center px-4 py-3 rounded-md hover:bg-gray-800 mt-10 text-red-400">
+        <button onClick={handleLogout} className="w-full flex items-center px-4 py-3 rounded-md hover:bg-gray-800 mt-10 text-red-400">
           <span className="mr-3">{ICONS.logout}</span>
           <span className="text-sm font-medium">Sair</span>
         </button>
@@ -715,7 +734,7 @@ export default function App() {
     
     return (
       <DashboardCliente 
-        onLogout={() => setUser(null)} 
+        onLogout={handleLogout} 
         clienteNome={user.nome} 
         contratoData={clientContract}
         imovelData={property}
@@ -739,7 +758,7 @@ export default function App() {
              </div>
           </div>
           <button 
-             onClick={() => setUser(null)}
+             onClick={handleLogout}
              className="text-white/60 hover:text-white transition-colors bg-white/5 p-2 rounded-lg"
           >
              <LogOut size={20} />
