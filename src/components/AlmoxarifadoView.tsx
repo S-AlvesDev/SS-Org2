@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { PackageMinus, PackagePlus, Clock, PackageSearch } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { toast } from 'sonner';
 
 const CATEGORIES = [
   'Fundação e Estrutura',
@@ -16,7 +17,7 @@ export default function AlmoxarifadoView({ data, user, onRefresh }: any) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (form.quantidade <= 0) return alert('Quantidade deve ser maior que zero.');
+    if (form.quantidade <= 0) return toast.error('Quantidade deve ser maior que zero.');
     try {
       const res = await fetch(`/api/materials/${form.material_id}/movement`, {
         method: 'POST',
@@ -24,15 +25,15 @@ export default function AlmoxarifadoView({ data, user, onRefresh }: any) {
         body: JSON.stringify({...form, funcionario_matricula: user.matricula}) 
       });
       if (res.ok) {
-        alert('Movimentação registrada com sucesso!');
+        toast.success('Movimentação registrada com sucesso!');
         setForm({ ...form, quantidade: 0, justificativa: '', funcionario_matricula: '' });
         onRefresh();
       } else {
         const err = await res.json();
-        alert('Erro: ' + (err.details || err.error));
+        toast.error('Erro: ' + (err.details || err.error));
       }
     } catch {
-      alert('Erro ao conectar ao servidor.');
+      toast.error('Erro ao conectar ao servidor.');
     }
   };
 

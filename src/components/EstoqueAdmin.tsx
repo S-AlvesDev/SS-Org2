@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Package, Search, AlertCircle, TrendingDown, Edit3, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { toast } from 'sonner';
 
 const CATEGORIES = [
   'Fundação e Estrutura',
@@ -30,21 +31,21 @@ export default function EstoqueAdmin({ data, onRefresh }: any) {
         body: JSON.stringify(form)
       });
       if (res.ok) {
-        alert('Material cadastrado com sucesso!');
+        toast.success('Material cadastrado com sucesso!');
         setForm({ nome: '', categoria: CATEGORIES[0], unidade_medida: 'CX', qtd_volumes: 0, fator_multiplicador: 1, estoque_minimo: 10 });
         onRefresh();
       } else {
         const err = await res.json();
-        alert('Erro: ' + (err.details || err.error));
+        toast.error('Erro: ' + (err.details || err.error));
       }
     } catch {
-      alert('Erro ao conectar ao servidor.');
+      toast.error('Erro ao conectar ao servidor.');
     }
   };
 
   const handleAjuste = async (e: any) => {
     e.preventDefault();
-    if (!ajusteForm.justificativa.trim()) return alert("Justificativa é obrigatória.");
+    if (!ajusteForm.justificativa.trim()) return toast.error("Justificativa é obrigatória.");
     
     try {
       const res = await fetch(`/api/materials/${ajusteModal.id}/movement`, {
@@ -59,16 +60,16 @@ export default function EstoqueAdmin({ data, onRefresh }: any) {
       });
       
       if (res.ok) {
-         alert('Ajuste realizado com sucesso.');
+         toast.success('Ajuste realizado com sucesso.');
          setAjusteModal(null);
          setAjusteForm({ quantidade: 0, justificativa: '' });
          onRefresh();
       } else {
          const err = await res.json();
-         alert('Erro: ' + err.error);
+         toast.error('Erro: ' + err.error);
       }
     } catch {
-      alert('Erro de conexão ao salvar ajuste.');
+      toast.error('Erro de conexão ao salvar ajuste.');
     }
   }
 

@@ -24,15 +24,26 @@ import {
   Activity,
   Package,
   PackageSearch,
-  Search
+  Search,
+  Calculator,
+  Briefcase,
+  Settings,
+  Lightbulb,
+  BarChart3,
+  Check,
+  Headset,
+  ShieldCheck,
+  ThumbsUp
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { toast } from 'sonner';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell } from 'recharts';
 import { AmortizationType } from './lib/finance';
 import DashboardCliente from './components/DashboardCliente';
 import EstoqueAdmin from './components/EstoqueAdmin';
 import AlmoxarifadoView from './components/AlmoxarifadoView';
 import AdminComissoesPanel from './components/AdminComissoesPanel';
+import SimuladorMCMV from './components/SimuladorMCMV';
 
 // Icons mapping for SUAP style
 const ICONS = {
@@ -243,7 +254,7 @@ export default function App() {
       if (res.ok) {
         setIsVerifyingEmail(true);
         // Em um app de produção não mostramos o código claro
-        alert(body.message + (body.devCode ? `\n(Simulação do Email: O código é ${body.devCode})` : ''));
+        toast.success(body.message + (body.devCode ? `\n(Simulação do Email: O código é ${body.devCode})` : ''));
       } else {
         setLoginError(body.error || 'Erro ao enviar código.');
       }
@@ -262,7 +273,7 @@ export default function App() {
       });
       const body = await res.json();
       if (res.ok) {
-        alert(`Cadastro realizado com sucesso! Sua matrícula é ${body.matricula}. Você já pode fazer login.`);
+        toast.success(`Cadastro realizado com sucesso! Sua matrícula é ${body.matricula}. Você já pode fazer login.`);
         setLoginForm({ matricula: body.matricula, senha: registerForm.senha });
         setIsRegistering(false);
         setIsVerifyingEmail(false);
@@ -306,7 +317,7 @@ export default function App() {
 
       const body = await res.json();
       if (res.ok) {
-        alert('Contrato criado com sucesso!');
+        toast.success('Contrato criado com sucesso!');
         loadApplicationData();
         setView('contracts');
         // Reset form
@@ -324,10 +335,10 @@ export default function App() {
           statusFinanceiro: 'Em Pagamento'
         });
       } else {
-        alert('Erro ao criar contrato: ' + (body.details || body.error || 'Erro desconhecido'));
+        toast.error('Erro ao criar contrato: ' + (body.details || body.error || 'Erro desconhecido'));
       }
     } catch (err) {
-      alert('Erro ao conectar ao servidor.');
+      toast.error('Erro ao conectar ao servidor.');
     }
   };
 
@@ -341,14 +352,14 @@ export default function App() {
       });
       const body = await res.json();
       if (res.ok) {
-        alert(`Funcionário cadastrado! Matrícula: ${body.matricula}`);
+        toast.success(`Funcionário cadastrado! Matrícula: ${body.matricula}`);
         loadApplicationData();
         setStaffForm({ nome: '', senha: '', role: 'CORRETOR_ATENDIMENTO' });
       } else {
-        alert('Erro ao cadastrar funcionário: ' + (body.error || 'Erro desconhecido'));
+        toast.error('Erro ao cadastrar funcionário: ' + (body.error || 'Erro desconhecido'));
       }
     } catch (err) {
-      alert('Erro ao cadastrar funcionário.');
+      toast.error('Erro ao cadastrar funcionário.');
     }
   };
 
@@ -362,12 +373,12 @@ export default function App() {
       });
       if (res.ok) {
           const result = await res.json();
-          alert(`${result.count} contratos atualizados com sucesso!`);
+          toast.success(`${result.count} contratos atualizados com sucesso!`);
           loadApplicationData();
           setShowUpdateModal(false);
       }
     } catch (err) {
-      alert('Erro ao processar atualização em massa.');
+      toast.error('Erro ao processar atualização em massa.');
     } finally {
       setIsUpdating(false);
     }
@@ -386,13 +397,32 @@ export default function App() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-[#f3f4f6] flex items-center justify-center p-4">
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="w-full max-w-md bg-white rounded-lg shadow-xl overflow-hidden"
-          id="login-card"
-        >
+      <div className="min-h-screen bg-[#f8fafc] flex flex-col font-sans">
+        <main className="flex-1">
+          {/* HERO & LOGIN SECTION */}
+          <section className="relative min-h-screen md:min-h-[85vh] flex flex-col items-center justify-center p-4 bg-gradient-to-br from-[#1d2d3d] to-[#121c26] text-white">
+            <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-20 hidden md:block">
+              <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-blue-500 blur-[120px]" />
+              <div className="absolute bottom-[0%] -right-[10%] w-[50%] h-[50%] rounded-full bg-teal-500 blur-[120px]" />
+            </div>
+            
+            <div className="z-10 w-full max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+              <div className="hidden md:block space-y-6">
+                <h1 className="text-4xl lg:text-6xl font-bold tracking-tight">Imobiliária SãoSeverino</h1>
+                <p className="text-xl text-gray-300">Gestão inteligente. Soluções completas para seu negócio imobiliário.</p>
+                <div className="pt-4 flex gap-4">
+                  <span className="flex items-center gap-2 text-sm font-medium"><CheckCircle2 className="w-5 h-5 text-blue-400"/> Inovação</span>
+                  <span className="flex items-center gap-2 text-sm font-medium"><CheckCircle2 className="w-5 h-5 text-blue-400"/> Confiança</span>
+                </div>
+              </div>
+
+              <div className="flex justify-center md:justify-end">
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="w-full max-w-md bg-white text-gray-800 rounded-2xl shadow-2xl overflow-hidden"
+                  id="login-card"
+                >
           <div className="bg-[#1d2d3d] p-8 text-center text-white">
             <div className="flex justify-center mb-4">
                 <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center p-1 border-2 border-blue-400">
@@ -416,7 +446,7 @@ export default function App() {
                       }).then(async r => {
                          const d = await r.json();
                          if (!r.ok) throw new Error(d.error || 'Erro.');
-                         alert(d.message);
+                         toast.success(d.message + (d.devCode ? `\n(Simulação do Email: O código é ${d.devCode})` : ''));
                          setRecoveryStep(2);
                       }).catch(err => setLoginError(err.message));
                   } else {
@@ -430,7 +460,7 @@ export default function App() {
                          setIsRecovering(false);
                          setRecoveryStep(1);
                          setRecoveryData({ email: '', code: '', newPassword: '' });
-                         alert('Senha alterada com sucesso! Faça login.');
+                         toast.success('Senha alterada com sucesso! Faça login.');
                       }).catch(err => setLoginError(err.message));
                   }
                } else if (isRegistering) {
@@ -590,14 +620,170 @@ export default function App() {
             )}
 
           </form>
-        </motion.div>
+                </motion.div>
+              </div>
+            </div>
+            
+            {/* Scroll Indicator */}
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 animate-bounce hidden md:flex flex-col items-center opacity-70">
+              <span className="text-xs tracking-widest uppercase mb-2 text-blue-200">Saiba Mais</span>
+              <div className="w-6 h-10 border-2 border-blue-200 rounded-full flex justify-center p-1">
+                 <div className="w-1.5 h-3 bg-blue-200 rounded-full animate-pulse" />
+              </div>
+            </div>
+          </section>
+
+          {/* SERVIÇOS SECTION */}
+          <section className="py-20 px-4 bg-gray-50 border-y border-gray-200">
+            <div className="max-w-6xl mx-auto">
+              <h2 className="text-center text-3xl md:text-4xl font-bold tracking-tight text-gray-800 uppercase mb-16">Serviços</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-12">
+                <div className="flex gap-4">
+                  <div className="mt-1 flex-shrink-0"><Briefcase className="w-8 h-8 text-blue-600" /></div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-800 mb-2">Colaboração Empresarial</h3>
+                    <p className="text-gray-600">Trabalhamos com parcerias com várias empresas na região.</p>
+                  </div>
+                </div>
+                <div className="flex gap-4">
+                  <div className="mt-1 flex-shrink-0"><Settings className="w-8 h-8 text-orange-500" /></div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-800 mb-2">Serviços E Engenharia</h3>
+                    <p className="text-gray-600">Nossos serviços são de alta qualidade para satisfazer nossos clientes.</p>
+                  </div>
+                </div>
+                <div className="flex gap-4">
+                  <div className="mt-1 flex-shrink-0"><Lightbulb className="w-8 h-8 text-teal-600" /></div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-800 mb-2">Mentes Criativas</h3>
+                    <p className="text-gray-600">Nossos profissionais são especialistas que pensam em soluções criativas para lançar os melhores produtos.</p>
+                  </div>
+                </div>
+                <div className="flex gap-4">
+                  <div className="mt-1 flex-shrink-0"><BarChart3 className="w-8 h-8 text-red-500" /></div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-800 mb-2">Gestão De Negócios</h3>
+                    <p className="text-gray-600">Trabalhamos com as melhores ferramentas do mercado para gerir nossos negócios.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* LOTEAMENTO SECTION */}
+          <section className="py-24 px-4 bg-white relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-1/2 h-full bg-blue-50/50 rounded-l-[100px] -z-10 hidden lg:block" />
+            <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 lg:gap-20 items-center">
+              <div className="order-2 md:order-1 relative flex justify-center">
+                <div className="w-full max-w-[500px] relative">
+                  <img src="/novo1_ssimoveis.png" alt="Residencial" className="w-full h-auto object-contain animate-float" />
+                  <img src="/novo3_ssimoveis.png" alt="Pássaros" className="absolute bottom-[5%] left-[10%] w-[170px] h-[159.7px] -ml-[22px] transition-all duration-300 hover:scale-110 hover:-translate-y-2" />
+                </div>
+              </div>
+              <div className="order-1 md:order-2 space-y-6">
+                <div>
+                  <span className="text-blue-700 font-bold uppercase tracking-wider text-sm">Loteamento</span>
+                  <h2 className="text-3xl md:text-5xl font-extrabold text-[#2a3c5a] mt-2 mb-4">ALTO DE SÃO SEVERINO II</h2>
+                  <p className="text-gray-600 text-lg leading-relaxed">O local ideal para investir e morar bem. O mais próximo da feira livre de Nova Cruz.</p>
+                </div>
+                
+                <div className="space-y-6 pt-6 border-t border-gray-100">
+                  <div className="flex gap-4">
+                    <div className="flex-shrink-0 mt-1"><Check className="w-6 h-6 text-blue-700 bg-blue-100 rounded-full p-1" /></div>
+                    <div>
+                      <h4 className="font-bold text-gray-800 tracking-wide">PERTO DE TUDO</h4>
+                      <p className="text-gray-600 text-sm mt-1 leading-relaxed">Caic, feira livre de Nova Cruz, redes de supermercados, rodoviária e muito mais.</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-4">
+                    <div className="flex-shrink-0 mt-1"><Check className="w-6 h-6 text-blue-700 bg-blue-100 rounded-full p-1" /></div>
+                    <div>
+                      <h4 className="font-bold text-gray-800 tracking-wide">INFRAESTRUTURA</h4>
+                      <p className="text-gray-600 text-sm mt-1 leading-relaxed">Rede de abastecimento de água, rede de energia elétrica, iluminação pública, meio-fio e ruas pavimentadas.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* PORQUE ESCOLHER SECTION */}
+          <section className="py-24 px-4 bg-[#f8fafc] border-t border-gray-200">
+            <div className="max-w-6xl mx-auto text-center">
+              <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-[#2a3c5a] mb-4">PORQUE ESCOLHER A SS IMÓVEIS?</h2>
+              <p className="text-gray-600 text-lg mb-16 max-w-2xl mx-auto">Oferecemos as melhores soluções para clientes e parceiros.</p>
+              
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-center">
+                {/* Left side */}
+                <div className="space-y-8 lg:space-y-12">
+                  <div className="flex flex-col md:flex-row items-center md:items-end justify-center lg:justify-end gap-4 text-center lg:text-right">
+                    <div className="order-2 md:order-1">
+                      <h4 className="font-bold text-gray-800 mb-1 tracking-wide">ESTRATÉGIA</h4>
+                    </div>
+                    <div className="order-1 md:order-2 bg-white p-3 shadow-md rounded-xl text-blue-600"><FileText className="w-8 h-8" /></div>
+                  </div>
+                  <div className="flex flex-col md:flex-row items-center md:items-end justify-center lg:justify-end gap-4 text-center lg:text-right">
+                    <div className="order-2 md:order-1">
+                      <h4 className="font-bold text-gray-800 mb-1 tracking-wide">ALTO DESEMPENHO</h4>
+                    </div>
+                    <div className="order-1 md:order-2 bg-white p-3 shadow-md rounded-xl text-blue-600"><BarChart3 className="w-8 h-8" /></div>
+                  </div>
+                  <div className="flex flex-col md:flex-row items-center md:items-end justify-center lg:justify-end gap-4 text-center lg:text-right">
+                    <div className="order-2 md:order-1">
+                      <h4 className="font-bold text-gray-800 mb-1 tracking-wide">SUPORTE AO CLIENTE</h4>
+                    </div>
+                    <div className="order-1 md:order-2 bg-white p-3 shadow-md rounded-xl text-blue-600"><Headset className="w-8 h-8" /></div>
+                  </div>
+                </div>
+                
+                {/* Center Image */}
+                <div className="hidden lg:flex justify-center p-8 items-center">
+                  <img src="/novo_ssimoveis.png" alt="Equipe" className="w-80 h-auto object-contain animate-float-horizontal" />
+                </div>
+
+                {/* Right side */}
+                <div className="space-y-8 lg:space-y-12">
+                  <div className="flex flex-col md:flex-row items-center md:items-start justify-center lg:justify-start gap-4 text-center lg:text-left">
+                    <div className="order-1 bg-white p-3 shadow-md rounded-xl text-blue-600"><Settings className="w-8 h-8" /></div>
+                    <div className="order-2">
+                      <h4 className="font-bold text-gray-800 mb-1 mt-3 tracking-wide">TECNOLOGIA</h4>
+                    </div>
+                  </div>
+                  <div className="flex flex-col md:flex-row items-center md:items-start justify-center lg:justify-start gap-4 text-center lg:text-left">
+                    <div className="order-1 bg-white p-3 shadow-md rounded-xl text-blue-600"><Briefcase className="w-8 h-8" /></div>
+                    <div className="order-2">
+                      <h4 className="font-bold text-gray-800 mb-1 mt-3 tracking-wide">MARKETING DE NEGÓCIOS</h4>
+                    </div>
+                  </div>
+                  <div className="flex flex-col md:flex-row items-center md:items-start justify-center lg:justify-start gap-4 text-center lg:text-left">
+                    <div className="order-1 bg-white p-3 shadow-md rounded-xl text-blue-600"><ShieldCheck className="w-8 h-8" /></div>
+                    <div className="order-2">
+                      <h4 className="font-bold text-gray-800 mb-1 mt-3 tracking-wide">PROTEÇÃO DE INFORMAÇÕES</h4>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* FOOTER */}
+          <footer className="bg-[#1d2d3d] text-gray-400 py-8 text-center text-sm border-t border-gray-700">
+             <div className="max-w-6xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-4">
+                <p>&copy; {new Date().getFullYear()} SS Imóveis - Gestão Inteligente. Todos os direitos reservados.</p>
+                <div className="flex gap-4">
+                   <a href="#" className="hover:text-white transition-colors">Termos</a>
+                   <a href="#" className="hover:text-white transition-colors">Privacidade</a>
+                </div>
+             </div>
+          </footer>
+        </main>
       </div>
     );
   }
 
   const Sidebar = () => (
-    <aside className={`bg-[#1d2d3d] text-gray-300 w-64 fixed h-full transition-all duration-300 z-50 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
-      <div className="p-6 border-b border-gray-700 flex flex-col items-center">
+    <aside className={`bg-[#1d2d3d] text-gray-300 w-64 fixed h-full flex flex-col overflow-y-auto transition-all duration-300 z-50 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
+      <div className="p-6 border-b border-gray-700 flex flex-col items-center shrink-0">
         <div className="w-16 h-16 bg-white rounded-full mb-3 flex items-center justify-center overflow-hidden border-2 border-blue-400">
            <img src="/logo-ss-imoveis.webp" alt="SS Imóveis" />
         </div>
@@ -605,7 +791,7 @@ export default function App() {
         <span className="text-[10px] text-blue-400 uppercase font-bold tracking-widest mt-1">Gestão Inteligente</span>
       </div>
       
-      <nav className="mt-4 px-2 space-y-1">
+      <nav className="mt-4 px-2 space-y-1 mb-8">
         <button onClick={() => setView('dashboard')} className={`w-full flex items-center px-4 py-3 rounded-md transition-all ${view === 'dashboard' ? 'bg-blue-700 text-white shadow-md' : 'hover:bg-gray-800'}`}>
           <span className="mr-3">{ICONS.dashboard}</span>
           <span className="text-sm font-medium">Dashboard</span>
@@ -648,6 +834,13 @@ export default function App() {
                </button>
             )}
 
+            {(user.role === 'ADMINISTRATIVO' || user.role === 'ADMINISTRADOR' || user.role === 'CORRETOR_ATENDIMENTO') && (
+               <button onClick={() => setView('simulador-mcmv')} className={`w-full flex items-center px-4 py-3 rounded-md transition-all ${view === 'simulador-mcmv' ? 'bg-orange-500 text-white shadow-md' : 'hover:bg-gray-800'}`}>
+                  <span className="mr-3"><Calculator size={20} /></span>
+                  <span className="text-sm font-medium">Simulador MCMV</span>
+               </button>
+            )}
+
             {(user.role === 'ADMINISTRATIVO' || user.role === 'ADMINISTRADOR' || user.role === 'FINANCEIRO_ATENDIMENTO') && (
                <button onClick={() => setView('admin-comissoes')} className={`w-full flex items-center px-4 py-3 rounded-md transition-all ${view === 'admin-comissoes' ? 'bg-blue-700 text-white shadow-md' : 'hover:bg-gray-800'}`}>
                   <span className="mr-3"><Activity size={20} /></span>
@@ -676,7 +869,7 @@ export default function App() {
         </button>
       </nav>
       
-      <div className="absolute bottom-0 w-full p-4 bg-[#162230] text-[10px] text-gray-500 border-t border-gray-700">
+      <div className="mt-auto shrink-0 w-full p-4 bg-[#162230] text-[10px] text-gray-500 border-t border-gray-700">
         <p>Usuário: <span className="text-gray-300">{user.nome}</span></p>
         <p>Matrícula: <span className="text-gray-300">{user.matricula}</span></p>
       </div>
@@ -817,8 +1010,8 @@ export default function App() {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
                      <h3 className="font-bold text-gray-800 text-sm uppercase tracking-tight mb-4">Status dos Contratos</h3>
-                     <div className="h-64">
-                        <ResponsiveContainer width="100%" height="100%">
+                     <div className="h-64" style={{ minWidth: 0, minHeight: 0 }}>
+                        <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                            <BarChart data={[
                               { name: 'Ativos', total: data.contracts.filter((c:any) => getContractStatus(c) === 'ATIVO').length, fill: '#10b981' },
                               { name: 'Atrasados', total: data.contracts.filter((c:any) => getContractStatus(c) === 'ATRASO').length, fill: '#ef4444' },
@@ -835,8 +1028,8 @@ export default function App() {
                   </div>
                   <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 flex flex-col">
                      <h3 className="font-bold text-gray-800 text-sm uppercase tracking-tight mb-4">Evolução de Propriedades</h3>
-                     <div className="h-64 flex-1">
-                        <ResponsiveContainer width="100%" height="100%">
+                     <div className="h-64 flex-1" style={{ minWidth: 0, minHeight: 0 }}>
+                        <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                            <PieChart>
                              <Pie 
                                 data={[
@@ -948,7 +1141,7 @@ export default function App() {
                          });
                          if (res.ok) {
                             const newClient = await res.json();
-                            alert(`Cliente cadastrado! Matrícula: ${newClient.matricula}`);
+                            toast.success(`Cliente cadastrado! Matrícula: ${newClient.matricula}`);
                             const shouldLink = form.incluirImovel.checked;
                             form.reset();
                             await loadApplicationData();
@@ -958,7 +1151,7 @@ export default function App() {
                             }
                          } else {
                             const errorData = await res.json();
-                            alert('Erro ao cadastrar cliente: ' + (errorData.error || 'Erro desconhecido'));
+                            toast.error('Erro ao cadastrar cliente: ' + (errorData.error || 'Erro desconhecido'));
                          }
                     }}>
                         <div>
@@ -1545,6 +1738,12 @@ export default function App() {
               </motion.div>
             )}
 
+            {view === 'simulador-mcmv' && (
+              <motion.div key="simulador-mcmv" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }}>
+                <SimuladorMCMV />
+              </motion.div>
+            )}
+
             {view === 'minhas-comissoes' && (
               <motion.div key="minhas-comissoes" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }}>
                 <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
@@ -1814,12 +2013,12 @@ export default function App() {
                           })
                         });
                         if (res.ok) {
-                          alert('Distrato efetuado com sucesso!');
+                          toast.success('Distrato efetuado com sucesso!');
                           setShowDistratoModal(false);
                           loadApplicationData();
                           setSelectedClient(null);
                         } else {
-                          alert('Erro ao processar distrato.');
+                          toast.error('Erro ao processar distrato.');
                         }
                         setIsProcessingDistrato(false);
                       }}
@@ -1875,13 +2074,13 @@ export default function App() {
                       body: formData
                     });
                     if (res.ok) {
-                      alert(propertyForm.id ? 'Imóvel atualizado com sucesso!' : 'Imóvel cadastrado com sucesso!');
+                      toast.success(propertyForm.id ? 'Imóvel atualizado com sucesso!' : 'Imóvel cadastrado com sucesso!');
                       setShowPropertyModal(false);
                       setPropertyForm({ id: null, nome: '', valor: 0, localizacao: '', descricao: '' });
                       loadApplicationData();
                     } else {
                       const err = await res.json();
-                      alert(`Erro: ${err.error || 'Erro ao processar'}`);
+                      toast.error(`Erro: ${err.error || 'Erro ao processar'}`);
                     }
                   }}>
                     <div>
@@ -2117,7 +2316,7 @@ export default function App() {
                             body: JSON.stringify(clientEditForm)
                           });
                           if (res.ok) {
-                            alert('Cadastro atualizado com sucesso!');
+                            toast.success('Cadastro atualizado com sucesso!');
                             setIsEditingClient(false);
                             loadApplicationData();
                             setSelectedClient(null);

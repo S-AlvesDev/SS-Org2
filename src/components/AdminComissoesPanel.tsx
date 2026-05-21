@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Activity, Edit3 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { toast } from 'sonner';
 
 export default function AdminComissoesPanel({ data, onRefresh }: any) {
   const [modalOpen, setModalOpen] = useState<any>(null);
@@ -32,14 +33,14 @@ export default function AdminComissoesPanel({ data, onRefresh }: any) {
       });
 
       if (res1.ok && res2.ok) {
-        alert('Dados atualizados com sucesso!');
+        toast.success('Dados atualizados com sucesso!');
         setModalOpen(null);
         onRefresh();
       } else {
-        alert('Erro ao atualizar dados. Verifique sua conexão.');
+        toast.error('Erro ao atualizar dados. Verifique sua conexão.');
       }
     } catch {
-      alert('Erro ao conectar ao servidor.');
+      toast.error('Erro ao conectar ao servidor.');
     }
   };
 

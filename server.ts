@@ -12,6 +12,7 @@ import multer from 'multer';
 import { createServer as createViteServer } from 'vite';
 import nodemailer from 'nodemailer';
 import { calculateSAC, calculatePrice, AmortizationType } from './src/lib/finance.ts';
+import { handleSimulacaoMCMV } from './src/lib/simuladorMCMV.ts';
 
 let transporter: nodemailer.Transporter | null = null;
 async function getTransporter() {
@@ -171,6 +172,8 @@ async function startServer() {
   });
 
   // API Routes
+  app.post('/api/simulacao-mcmv', handleSimulacaoMCMV);
+
   app.post('/api/upload', upload.single('file'), async (req, res) => {
     try {
       const { jid, text } = req.body;
@@ -253,10 +256,12 @@ async function startServer() {
     const message = `Caso exista uma conta com e-mail ${email} você receberá um e-mail para recuperar sua senha.`;
 
     // check if it's client or user
-    const { data: client } = await supabaseServer.from('clients').select('id').eq('email', email).maybeSingle();
-    const { data: user } = await supabaseServer.from('users').select('id').eq('matricula', email).maybeSingle(); // For employees email is normally matricula or we don't have it? Wait, users have matricula, but maybe no email.
+    const { data: client } = await supabaseServer.from('clients').select('id, email').eq('email', email).maybeSingle();
+    const { data: user } = await supabaseServer.from('users').select('id, email').or(`email.eq.${email},matricula.eq.${email}`).maybeSingle();
 
-    if (!client && !user) {
+    const targetEmail = client?.email || user?.email;
+
+    if (!targetEmail) {
       return res.json({ message });
     }
 
@@ -267,43 +272,50 @@ async function startServer() {
       const tp = await getTransporter();
       await tp.sendMail({
           from: '"SS Imóveis" <no-reply@ssimoveis.com>',
-          to: email,
+          to: targetEmail,
           subject: 'Recuperação de Senha',
           html: `<p>Seu código para recuperar a senha é: <strong>${code}</strong></p><p>Ele expira em 15 minutos.</p>`
       });
       res.json({ message });
     } catch(e) {
       console.error('[Mail Error]', e);
-      res.json({ message });
+      res.json({ 
+        message, 
+        devCode: (!process.env.SMTP_USER && process.env.NODE_ENV !== 'production') ? code : undefined 
+      });
     }
   });
 
   app.post('/api/auth/reset-password', async (req, res) => {
-    const { email, code, newPassword } = req.body;
+    let { email, code, newPassword } = req.body;
+    email = email?.trim();
+    newPassword = newPassword?.trim();
+    code = code?.trim();
     const entry = passwordResetCodes.get(email);
     if (!entry || entry.code !== code || Date.now() > entry.expiry) {
        return res.status(400).json({ error: 'Código inválido ou expirado.' });
     }
     
     // check client
-    const { data: client } = await supabaseServer.from('clients').select('id').eq('email', email).maybeSingle();
+    const { data: client } = await supabaseServer.from('clients').select('id').or(`email.eq.${email},matricula.eq.${email}`).maybeSingle();
     let updated = false;
     if (client) {
-       await supabaseServer.from('clients').update({ password: newPassword }).eq('id', client.id);
-       updated = true;
-    } else {
-       const { data: user } = await supabaseServer.from('users').select('id').eq('matricula', email).maybeSingle();
-       if (user) {
-         await supabaseServer.from('users').update({ password: newPassword }).eq('id', user.id);
-         updated = true;
-       }
+       const { error: err1 } = await supabaseServer.from('clients').update({ senha: newPassword }).eq('id', client.id);
+       if (!err1) updated = true;
+    }
+    
+    // check user
+    const { data: user } = await supabaseServer.from('users').select('id').or(`email.eq.${email},matricula.eq.${email}`).maybeSingle();
+    if (user) {
+       const { error: err2 } = await supabaseServer.from('users').update({ senha: newPassword }).eq('id', user.id);
+       if (!err2) updated = true;
     }
 
     if (updated) {
        passwordResetCodes.delete(email);
        res.json({ success: true, message: 'Senha atualizada com sucesso.' });
     } else {
-       res.status(404).json({ error: 'Usuário não encontrado.' });
+       res.status(404).json({ error: 'Usuário não encontrado ou erro ao atualizar senha no banco de dados.' });
     }
   });
 
@@ -395,6 +407,8 @@ async function startServer() {
 
   app.post('/api/login', async (req, res) => {
     let { matricula, senha } = req.body;
+    matricula = matricula?.trim();
+    senha = senha?.trim();
     try {
       if (matricula && matricula.includes('@')) {
           const { data: client } = await supabaseServer
@@ -402,10 +416,22 @@ async function startServer() {
               .select('matricula')
               .eq('email', matricula)
               .maybeSingle();
+              
           if (client && client.matricula) {
               matricula = client.matricula;
           } else {
-              return res.status(401).json({ error: 'E-mail não encontrado ou credenciais inválidas' });
+              // Verifica se é um usuário/staff
+              const { data: userByEmail } = await supabaseServer
+                  .from('users')
+                  .select('matricula')
+                  .eq('email', matricula)
+                  .maybeSingle();
+              
+              if (userByEmail && userByEmail.matricula) {
+                  matricula = userByEmail.matricula;
+              } else {
+                  return res.status(401).json({ error: 'E-mail não encontrado ou credenciais inválidas' });
+              }
           }
       }
 
@@ -514,7 +540,7 @@ async function startServer() {
     if (updateError || !client) return res.status(404).json({ error: 'Cliente não encontrado ou erro no update' });
     
     // Sync with users table
-    await supabaseServer.from('users').update({ nome }).eq('matricula', client.matricula);
+    await supabaseServer.from('users').update({ nome, email }).eq('matricula', client.matricula);
     
     res.json(client);
   });

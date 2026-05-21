@@ -12,6 +12,7 @@ import {
   Phone
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { toast } from 'sonner';
 
 interface DashboardClienteProps {
   onLogout: () => void;
@@ -360,7 +361,7 @@ export default function DashboardCliente({ onLogout, clienteNome = "Cliente SS",
                         />
                         <button 
                           onClick={() => {
-                            if (!interestForm.nome || !interestForm.telefone) return alert("Preencha nome e telefone.");
+                            if (!interestForm.nome || !interestForm.telefone) return toast.error("Preencha nome e telefone.");
                             fetch('/api/interesse', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({
                               imovelId: selectedProperty.id,
                               imovelNome: selectedProperty.nome,
@@ -370,7 +371,7 @@ export default function DashboardCliente({ onLogout, clienteNome = "Cliente SS",
                               telefone: interestForm.telefone,
                               email: interestForm.email
                             })}).catch(e=>{});
-                            alert("Interesse registrado! Entraremos em contato.");
+                            toast.success("Interesse registrado! Entraremos em contato.");
                             setShowInterestForm(false);
                             setSelectedProperty(null);
                           }}
