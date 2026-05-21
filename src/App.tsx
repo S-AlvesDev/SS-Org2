@@ -155,6 +155,17 @@ export default function App() {
   const [recoveryStep, setRecoveryStep] = useState(1);
   const [recoveryData, setRecoveryData] = useState({ email: '', code: '', newPassword: '' });
   const [emailCode, setEmailCode] = useState('');
+  const [resendCountdown, setResendCountdown] = useState(0);
+
+  useEffect(() => {
+    let timer: any;
+    if (resendCountdown > 0) {
+      timer = setInterval(() => {
+        setResendCountdown(prev => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [resendCountdown]);
   
   // Distrato State
   const [showDistratoModal, setShowDistratoModal] = useState(false);
@@ -242,8 +253,8 @@ export default function App() {
     }
   };
 
-  const handleRequestCode = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleRequestCode = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     try {
       const res = await fetch('/api/auth/send-code', {
         method: 'POST',
@@ -253,6 +264,7 @@ export default function App() {
       const body = await res.json();
       if (res.ok) {
         setIsVerifyingEmail(true);
+        setResendCountdown(15);
         // Em um app de produção não mostramos o código claro
         toast.success(body.message + (body.devCode ? `\n(Simulação do Email: O código é ${body.devCode})` : ''));
       } else {
@@ -260,6 +272,24 @@ export default function App() {
       }
     } catch (err) {
       setLoginError('Problema de conexão, tente novamente.');
+    }
+  };
+
+  const handleRecoverRequest = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setLoginError('');
+    try {
+      const r = await fetch('/api/auth/reset-password-request', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ email: recoveryData.email })
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Erro.');
+      toast.success(d.message + (d.devCode ? `\n(Simulação do Email: O código é ${d.devCode})` : ''));
+      setRecoveryStep(2);
+      setResendCountdown(15);
+    } catch (err: any) {
+      setLoginError(err.message);
     }
   };
 
@@ -439,16 +469,7 @@ export default function App() {
                   e.preventDefault();
                   // Handle recovery
                   if (recoveryStep === 1) {
-                      setLoginError('');
-                      fetch('/api/auth/reset-password-request', {
-                         method: 'POST', headers: {'Content-Type': 'application/json'},
-                         body: JSON.stringify({ email: recoveryData.email })
-                      }).then(async r => {
-                         const d = await r.json();
-                         if (!r.ok) throw new Error(d.error || 'Erro.');
-                         toast.success(d.message + (d.devCode ? `\n(Simulação do Email: O código é ${d.devCode})` : ''));
-                         setRecoveryStep(2);
-                      }).catch(err => setLoginError(err.message));
+                      handleRecoverRequest();
                   } else {
                       setLoginError('');
                       fetch('/api/auth/reset-password', {
@@ -494,6 +515,16 @@ export default function App() {
                          className="w-full px-4 py-3 text-center tracking-[0.5em] font-mono text-xl border border-gray-300 rounded-md outline-none"
                          value={recoveryData.code} onChange={e => setRecoveryData({...recoveryData, code: e.target.value})}
                        />
+                       <div className="text-right mt-1">
+                         <button 
+                           type="button" 
+                           onClick={() => handleRecoverRequest()}
+                           disabled={resendCountdown > 0}
+                           className="text-xs text-blue-600 hover:underline disabled:opacity-50 disabled:no-underline font-medium"
+                         >
+                           {resendCountdown > 0 ? `Reenviar código em ${resendCountdown}s` : 'Reenviar código'}
+                         </button>
+                       </div>
                      </div>
                      <div className="mt-4">
                        <label className="block text-sm font-semibold text-gray-700 mb-1">Nova Senha</label>
@@ -553,13 +584,23 @@ export default function App() {
                     value={emailCode} onChange={e => setEmailCode(e.target.value)}
                   />
                 </div>
-                <button 
-                  type="button" 
-                  onClick={() => setIsVerifyingEmail(false)}
-                  className="w-full text-sm text-gray-500 hover:text-gray-700 mt-2 font-medium"
-                >
-                  Voltar e editar dados
-                </button>
+                <div className="flex justify-between items-center mt-2">
+                  <button 
+                    type="button" 
+                    onClick={() => setIsVerifyingEmail(false)}
+                    className="text-sm text-gray-500 hover:text-gray-700 font-medium p-1"
+                  >
+                    Voltar
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={() => handleRequestCode()}
+                    disabled={resendCountdown > 0}
+                    className="text-sm text-blue-600 hover:underline disabled:opacity-50 disabled:no-underline font-medium p-1"
+                  >
+                    {resendCountdown > 0 ? `Reenviar código em ${resendCountdown}s` : 'Reenviar código'}
+                  </button>
+                </div>
               </>
             ) : (
               <>
