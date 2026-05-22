@@ -33,7 +33,10 @@ import {
   Check,
   Headset,
   ShieldCheck,
-  ThumbsUp
+  ThumbsUp,
+  MessageCircle,
+  Facebook,
+  Instagram
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
@@ -819,15 +822,67 @@ export default function App() {
           </section>
 
           {/* FOOTER */}
-          <footer className="bg-[#1d2d3d] text-gray-400 py-8 text-center text-sm border-t border-gray-700">
-             <div className="max-w-6xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-4">
-                <p>&copy; {new Date().getFullYear()} SS Imóveis - Gestão Inteligente. Todos os direitos reservados.</p>
-                <div className="flex gap-4">
-                   <a href="#" className="hover:text-white transition-colors">Termos</a>
-                   <a href="#" className="hover:text-white transition-colors">Privacidade</a>
+          <footer className="w-full mt-20 relative">
+            <div className="w-full overflow-hidden leading-none block relative z-10 -mb-[1px]">
+               <svg className="relative block w-full h-[60px] md:h-[100px] lg:h-[150px]" preserveAspectRatio="none" viewBox="0 0 1200 120" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V120H0V0c5.38,1.44,11.23,3.31,17.2,5.29C104.22,34.2,216.5,70.62,321.39,56.44Z" className="fill-[#1d2d3d]"></path>
+               </svg>
+            </div>
+            <div className="bg-[#1d2d3d] pt-8 md:pt-12 pb-6 px-6 lg:px-20 text-white relative z-20">
+              <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-12 font-sans px-4">
+                {/* Column 1 */}
+                <div className="flex flex-col gap-4">
+                  <p className="font-bold text-lg max-w-[280px] leading-snug">Mais de 17 anos de experiência no mercado imobiliário do RN.</p>
+                  <div className="flex gap-3 mt-4">
+                    <a href="https://www.facebook.com/ssimoveisnc" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded bg-[#678ded] flex items-center justify-center hover:bg-[#5b80f1] transition-colors shadow-sm">
+                      <Facebook size={20} className="text-white fill-current" />
+                    </a>
+                    <a href="https://www.instagram.com/imobiliariasaoseverino" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded bg-[#e84f9b] flex items-center justify-center hover:bg-[#d6418b] transition-colors shadow-sm">
+                      <Instagram size={20} className="text-white" />
+                    </a>
+                  </div>
                 </div>
-             </div>
+
+                {/* Column 2 */}
+                <div className="flex flex-col gap-3">
+                  <h4 className="font-bold text-[17px] mb-3">Informações</h4>
+                  <p className="text-[14px] font-semibold leading-relaxed text-blue-50">Avenida Assis Chateaubriand 872, São Sebastião, Nova Cruz - RN, 59215-000</p>
+                  <p className="text-[14px] font-semibold text-blue-50 mt-1">CNPJ: 10.970.117/0001-51</p>
+                  <p className="text-[14px] font-semibold text-blue-50 mt-1">imobiliariasaoseverino@hotmail.com</p>
+                  <p className="text-[14px] font-semibold text-blue-50 mt-1">84 99451.1030</p>
+                </div>
+
+                {/* Column 3 */}
+                <div className="flex flex-col gap-3">
+                  <h4 className="font-bold text-[17px] mb-3">Novidades</h4>
+                  <p className="text-[14px] font-semibold mb-2 text-blue-50">Receba nossas novidades por email.</p>
+                  <div className="flex w-full max-w-sm mt-1">
+                    <input type="email" placeholder="Digite seu Email" className="bg-[#fc7c52] text-white placeholder-white/80 px-4 py-2.5 flex-1 text-sm rounded-l-md border-none focus:outline-none focus:ring-2 focus:ring-orange-400" />
+                    <button className="bg-[#fc7c52] hover:bg-[#e86a42] px-4 py-2.5 rounded-r-md transition-colors flex items-center justify-center">
+                      <ChevronRight size={20} className="text-white" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom Copyright */}
+              <div className="max-w-6xl mx-auto mt-16 pt-8 border-t border-[#1d2d3d] text-center text-[11px] font-medium opacity-80 pb-2 px-4">
+                2026 SS Imóveis Brasil - Criação S-AlvesDev. Todos os direitos reservados.
+              </div>
+            </div>
           </footer>
+
+          {/* Botão de Suporte FAB no Login */}
+          <a
+            href="https://wa.me/5584994511030"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="fixed bottom-6 right-6 bg-green-500 text-white p-4 rounded-full shadow-2xl hover:bg-green-600 transition-all z-[999] active:scale-95 flex items-center justify-center"
+            style={{ boxShadow: '0 4px 20px rgba(34, 197, 94, 0.4)' }}
+            title="Falar com Especialista"
+          >
+            <MessageCircle size={28} />
+          </a>
         </main>
       </div>
     );
