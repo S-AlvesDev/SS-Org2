@@ -1212,6 +1212,96 @@ async function startServer() {
     res.json(comissao);
   });
 
+  // ==============================================
+  // MÓDULO: CONTROLE DE CLIENTES
+  // ==============================================
+
+  app.get('/api/controle-clientes', async (req, res) => {
+    const { data, error } = await supabaseServer.from('controle_processos_clientes').select('*').order('data_cadastro_sistema', { ascending: false });
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+  });
+
+  app.post('/api/controle-clientes', async (req, res) => {
+    const payload = req.body;
+    
+    // Inserir registro principal
+    const { data, error } = await supabaseServer.from('controle_processos_clientes').insert(payload).select().maybeSingle();
+    
+    if (error) return res.status(500).json({ error: error.message });
+
+    // Criar Log (Auditoria)
+    if (data) {
+      await supabaseServer.from('logs_controle_clientes').insert({
+        processo_id: data.id,
+        acao: 'CRIADO',
+        detalhes_alteracao: { registro_inicial: payload }
+      });
+    }
+
+    res.json(data);
+  });
+
+  app.put('/api/controle-clientes/:id', async (req, res) => {
+    const { id } = req.params;
+    const payload = req.body;
+
+    // Buscar estado anterior para o log
+    const { data: oldData } = await supabaseServer.from('controle_processos_clientes').select('*').eq('id', id).maybeSingle();
+
+    if (!oldData) return res.status(404).json({ error: 'Processo não encontrado.' });
+
+    const { data, error } = await supabaseServer.from('controle_processos_clientes').update(payload).eq('id', id).select().maybeSingle();
+    
+    if (error) return res.status(500).json({ error: error.message });
+
+    // Descobrir o que mudou
+    const changes: any = {};
+    for (const key in payload) {
+      if (oldData[key] !== payload[key]) {
+        changes[key] = { de: oldData[key], para: payload[key] };
+      }
+    }
+
+    // Criar Log (Auditoria)
+    if (Object.keys(changes).length > 0) {
+       await supabaseServer.from('logs_controle_clientes').insert({
+        processo_id: id,
+        acao: 'ALTERADO',
+        detalhes_alteracao: changes
+      });
+    }
+
+    res.json(data);
+  });
+
+  app.delete('/api/controle-clientes/:id', async (req, res) => {
+    const { id } = req.params;
+
+    // Buscar infomações antes de deletar (se possível)
+    const { data: oldData } = await supabaseServer.from('controle_processos_clientes').select('*').eq('id', id).maybeSingle();
+
+    if (!oldData) return res.status(404).json({ error: 'Processo não encontrado.' });
+
+    // Opcional: registrar log antes de deletar (só será mantido se o cascade for desabilitado no FK, 
+    // mas de acordo com o script, tem ON DELETE CASCADE, então os logs sumiriam. 
+    // Se quiser manter os logs do processo deletado, tire o CASCADE ou faça apenas soft delete.
+    // Provisoriamente, deletamos direto e o log apaga junto.
+    
+    const { error } = await supabaseServer.from('controle_processos_clientes').delete().eq('id', id);
+    if (error) return res.status(500).json({ error: error.message });
+
+    res.json({ success: true, message: 'Processo deletado com sucesso.' });
+  });
+
+  app.get('/api/controle-clientes/:id/logs', async (req, res) => {
+    const { id } = req.params;
+    const { data, error } = await supabaseServer.from('logs_controle_clientes').select('*').eq('processo_id', id).order('data_hora_alteracao', { ascending: false });
+    
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+  });
+
   // Vite Middleware
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({

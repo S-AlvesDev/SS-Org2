@@ -48,6 +48,8 @@ import AlmoxarifadoView from './components/AlmoxarifadoView';
 import AdminComissoesPanel from './components/AdminComissoesPanel';
 import SimuladorMCMV from './components/SimuladorMCMV';
 
+import ControleClientes from './components/ControleClientes';
+
 // Icons mapping for SUAP style
 const ICONS = {
   dashboard: <LayoutDashboard size={20} />,
@@ -930,6 +932,10 @@ export default function App() {
                 <button onClick={() => setView('estoque')} className={`w-full flex items-center px-4 py-3 rounded-md transition-all ${view === 'estoque' ? 'bg-blue-700 text-white shadow-md' : 'hover:bg-gray-800'}`}>
                   <span className="mr-3"><PackageSearch size={20} /></span>
                   <span className="text-sm font-medium">Controle de Estoque</span>
+                </button>
+                <button onClick={() => setView('controle-clientes')} className={`w-full flex items-center px-4 py-3 rounded-md transition-all ${view === 'controle-clientes' ? 'bg-blue-700 text-white shadow-md' : 'hover:bg-gray-800'}`}>
+                  <span className="mr-3"><MapPin size={20} /></span>
+                  <span className="text-sm font-medium">Controle Clientes</span>
                 </button>
               </>
             )}
@@ -1842,6 +1848,12 @@ export default function App() {
             {view === 'admin-comissoes' && (
               <motion.div key="admin-comissoes" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }}>
                 <AdminComissoesPanel data={data} onRefresh={loadApplicationData} />
+              </motion.div>
+            )}
+
+            {view === 'controle-clientes' && (
+              <motion.div key="controle-clientes" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }}>
+                <ControleClientes />
               </motion.div>
             )}
 
