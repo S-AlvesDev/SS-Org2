@@ -133,5 +133,18 @@ CREATE TABLE IF NOT EXISTS wa_messages (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Tabela de Imóveis Interessados (Leads)
+CREATE TABLE IF NOT EXISTS imoveis_interessados (
+    id BIGSERIAL PRIMARY KEY,
+    imovel_id BIGINT REFERENCES properties(id) ON DELETE SET NULL,
+    imovel_nome TEXT NOT NULL,
+    imovel_valor DECIMAL,
+    imovel_localizacao TEXT,
+    nome TEXT NOT NULL,
+    telefone TEXT NOT NULL,
+    email TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Habilitar RLS (Opcional, desativado por padrão para este exemplo para facilitar a conexão server-side com Service Role Key)
 -- Se quiser usar Anon Key, você precisará configurar as políticas (Policies) adequadamente.

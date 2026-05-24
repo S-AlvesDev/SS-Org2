@@ -37,7 +37,8 @@ import {
   MessageCircle,
   Facebook,
   Instagram,
-  Trash2
+  Trash2,
+  UserCheck
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
@@ -47,6 +48,7 @@ import EstoqueAdmin from './components/EstoqueAdmin';
 import AlmoxarifadoView from './components/AlmoxarifadoView';
 import AdminComissoesPanel from './components/AdminComissoesPanel';
 import SimuladorMCMV from './components/SimuladorMCMV';
+import ImoveisInteressados from './components/ImoveisInteressados';
 
 import ControleClientes from './components/ControleClientes';
 
@@ -94,6 +96,13 @@ const PropertyGallery = ({ images, status }: { images?: string[], status: string
       }
     }
   }
+  
+  imageList = imageList.map(img => {
+      if (img && !img.includes('/') && !img.startsWith('http')) {
+          return `/assets/imoveis/${img}`;
+      }
+      return img;
+  });
 
   if (imageList.length === 0 || hasError) {
     return (
@@ -212,7 +221,24 @@ export default function App() {
 
   // Property Form State
   const [showPropertyModal, setShowPropertyModal] = useState(false);
+  const [availableImages, setAvailableImages] = useState<string[]>([]);
   const [propertyForm, setPropertyForm] = useState({ id: null as number | null, nome: '', valor: 0, localizacao: '', descricao: '', images: [] as string[], tipo: 'Lote' });
+  const [selectedImageStr, setSelectedImageStr] = useState<string>('');
+  
+  useEffect(() => {
+    if (showPropertyModal) {
+      fetch('/api/imagens-disponiveis')
+        .then(res => res.json())
+        .then(data => setAvailableImages(data || []))
+        .catch(err => console.error("Error fetching available images:", err));
+        
+      if (propertyForm.images && propertyForm.images.length > 0) {
+        setSelectedImageStr(propertyForm.images[0]);
+      } else {
+        setSelectedImageStr('');
+      }
+    }
+  }, [showPropertyModal, propertyForm.images]);
   const [isConfirmingDeleteProperty, setIsConfirmingDeleteProperty] = useState(false);
 
   // Contract Filter State
@@ -916,6 +942,13 @@ export default function App() {
               </button>
             )}
 
+            {(user.role === 'ADMINISTRATIVO' || user.role === 'ADMINISTRADOR' || user.role === 'CORRETOR_ATENDIMENTO') && (
+              <button onClick={() => setView('imoveis-interessados')} className={`w-full flex items-center px-4 py-3 rounded-md transition-all ${view === 'imoveis-interessados' ? 'bg-blue-700 text-white shadow-md' : 'hover:bg-gray-800'}`}>
+                <span className="mr-3"><UserCheck size={20} /></span>
+                <span className="text-sm font-medium">Imóveis Interessados</span>
+              </button>
+            )}
+
             {(user.role === 'ADMINISTRATIVO' || user.role === 'ADMINISTRADOR') && (
               <>
                 <button onClick={() => setView('estoque')} className={`w-full flex items-center px-4 py-3 rounded-md transition-all ${view === 'estoque' ? 'bg-blue-700 text-white shadow-md' : 'hover:bg-gray-800'}`}>
@@ -1109,7 +1142,7 @@ export default function App() {
                   <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
                      <h3 className="font-bold text-gray-800 text-sm uppercase tracking-tight mb-4">Status dos Contratos</h3>
                      <div className="h-64" style={{ minWidth: 0, minHeight: 0 }}>
-                        <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
+                        <ResponsiveContainer width="100%" height={240}>
                            <BarChart data={[
                               { name: 'Ativos', total: data.contracts.filter((c:any) => c.status === 'ATIVO').length, fill: '#10b981' },
                               { name: 'Distratados', total: data.contracts.filter((c:any) => c.status === 'DISTRATADO').length, fill: '#64748b' },
@@ -1126,7 +1159,7 @@ export default function App() {
                   <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 flex flex-col">
                      <h3 className="font-bold text-gray-800 text-sm uppercase tracking-tight mb-4">Evolução de Propriedades</h3>
                      <div className="h-64 flex-1" style={{ minWidth: 0, minHeight: 0 }}>
-                        <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
+                        <ResponsiveContainer width="100%" height={210}>
                            <PieChart>
                              <Pie 
                                 data={[
@@ -1809,6 +1842,12 @@ export default function App() {
               </motion.div>
             )}
 
+            {view === 'imoveis-interessados' && (
+              <motion.div key="imoveis-interessados" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }}>
+                <ImoveisInteressados />
+              </motion.div>
+            )}
+
 
 
 
@@ -1849,17 +1888,10 @@ export default function App() {
                       formData.append('descricao', propertyForm.descricao);
                       formData.append('tipo', propertyForm.tipo || 'Lote');
                             
-                      if (propertyForm.id && propertyForm.images && propertyForm.images.length > 0) {
-                        formData.append('existingImages', JSON.stringify(propertyForm.images));
+                      if (selectedImageStr) {
+                        formData.append('imagemSelecionada', selectedImageStr);
                       }
-
-                      const fileInput = form.querySelector('input[name="images"]') as HTMLInputElement;
-                      if (fileInput && fileInput.files && fileInput.files.length > 0) {
-                        for (let i = 0; i < fileInput.files.length; i++) {
-                          formData.append('images', fileInput.files[i]);
-                        }
-                      }
-                            
+                      
                       const url = propertyForm.id ? `/api/properties/${propertyForm.id}` : '/api/properties';
                       const method = propertyForm.id ? 'PUT' : 'POST';
                       const res = await fetch(url, {
@@ -1940,8 +1972,24 @@ export default function App() {
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-black text-gray-500 uppercase mb-1">Fotos do Imóvel</label>
-                      <input type="file" name="images" multiple accept="image/*" className="w-full px-4 py-2 border rounded-lg text-sm bg-gray-50" />
+                      <label className="block text-[10px] font-black text-gray-500 uppercase mb-1">Capa / Imagem do Imóvel</label>
+                      <div className="grid grid-cols-3 gap-3 max-h-48 overflow-y-auto p-2 bg-gray-50 border rounded-lg">
+                        {availableImages.length === 0 ? (
+                          <div className="col-span-3 text-xs text-gray-400 text-center py-4">
+                            Nenhuma imagem encontrada na pasta do servidor.
+                          </div>
+                        ) : (
+                          availableImages.map((imgPath, idx) => (
+                            <img
+                              key={idx}
+                              src={`/assets/imoveis/${imgPath}`}
+                              alt={`Imagem ${idx}`}
+                              className={`w-full h-20 object-cover rounded cursor-pointer transition-all ${selectedImageStr === imgPath ? 'ring-4 ring-blue-500 shadow-md scale-105 z-10' : 'hover:opacity-80 border border-gray-200'}`}
+                              onClick={() => setSelectedImageStr(imgPath)}
+                            />
+                          ))
+                        )}
+                      </div>
                     </div>
 
                     <div className="flex space-x-3 mt-6">

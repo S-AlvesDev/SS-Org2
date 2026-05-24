@@ -641,9 +641,118 @@ async function startServer() {
     res.json({ ...contract, status: 'DISTRATADO', distrato: updatedDistrato });
   });
 
+  // Helper for storing interest leads locally as a fallback
+  const getLocalInteresses = (): any[] => {
+    const filePath = path.join(process.cwd(), 'public', 'media', 'interesses.json');
+    try {
+      if (fs.existsSync(filePath)) {
+        const content = fs.readFileSync(filePath, 'utf-8');
+        return JSON.parse(content);
+      }
+    } catch (e) {
+      console.error('[Interesse] Erro ao ler interesses.json local', e);
+    }
+    return [];
+  };
+
+  const saveLocalInteresses = (interesses: any[]) => {
+    const dir = path.join(process.cwd(), 'public', 'media');
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    const filePath = path.join(dir, 'interesses.json');
+    try {
+      fs.writeFileSync(filePath, JSON.stringify(interesses, null, 2), 'utf-8');
+    } catch (e) {
+      console.error('[Interesse] Erro ao salvar interesses.json local', e);
+    }
+  };
+
+  app.get('/api/interesse', async (req, res) => {
+    try {
+      // Try to read from Supabase
+      const { data, error } = await supabaseServer.from('imoveis_interessados').select('*').order('created_at', { ascending: false });
+      if (!error && data) {
+        // Map to standard layout names
+        const mapped = data.map((item: any) => ({
+          id: item.id,
+          imovelId: item.imovel_id,
+          imovelNome: item.imovel_nome,
+          imovelValor: item.imovel_valor,
+          imovelLocalizacao: item.imovel_localizacao,
+          nome: item.nome,
+          telefone: item.telefone,
+          email: item.email,
+          created_at: item.created_at
+        }));
+        return res.json(mapped);
+      }
+    } catch (sbErr) {
+      console.log('[Supabase] Erro ao ler de imoveis_interessados table, reverting to local interesses.json', sbErr);
+    }
+
+    // Fallback: Read from local storage
+    const local = getLocalInteresses().sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    res.json(local);
+  });
+
+  app.delete('/api/interesse/:id', async (req, res) => {
+    const id = Number(req.params.id);
+    try {
+      // Remove from local file
+      const local = getLocalInteresses();
+      const updated = local.filter((item: any) => Number(item.id) !== id);
+      saveLocalInteresses(updated);
+
+      // Try to delete from Supabase
+      try {
+        await supabaseServer.from('imoveis_interessados').delete().eq('id', id);
+      } catch (sbErr) {
+        console.log('[Supabase] Erro ao apagar lead no Supabase', sbErr);
+      }
+
+      res.json({ success: true });
+    } catch (err: any) {
+      console.error('[API] Erro ao deletar interessado', err);
+      res.status(500).json({ error: 'Erro ao deletar interessado' });
+    }
+  });
+
   app.post('/api/interesse', async (req, res) => {
     const { imovelId, imovelNome, imovelValor, imovelLocalizacao, nome, telefone, email } = req.body;
     try {
+       // Save locally
+       const interesses = getLocalInteresses();
+       const newId = Date.now();
+       const newLead = {
+         id: newId,
+         imovelId: imovelId ? Number(imovelId) : null,
+         imovelNome,
+         imovelValor: imovelValor ? Number(imovelValor) : null,
+         imovelLocalizacao,
+         nome,
+         telefone,
+         email,
+         created_at: new Date().toISOString()
+       };
+       interesses.push(newLead);
+       saveLocalInteresses(interesses);
+
+       // Try to save to Supabase
+       try {
+         await supabaseServer.from('imoveis_interessados').insert({
+           id: newId,
+           imovel_id: imovelId ? Number(imovelId) : null,
+           imovel_nome: imovelNome,
+           imovel_valor: imovelValor ? Number(imovelValor) : null,
+           imovel_localizacao: imovelLocalizacao,
+           nome,
+           telefone,
+           email,
+           created_at: new Date().toISOString()
+         });
+       } catch (sbErr) {
+         console.log('[Supabase] imoveis_interessados table not available or error:', sbErr);
+       }
+
        const tp = await getTransporter();
        
        // Alert admin
@@ -656,7 +765,7 @@ async function startServer() {
                   <p><strong>Telefone:</strong> ${telefone}</p>
                   <p><strong>E-mail:</strong> ${email || 'Não informado'}</p>
                   <p><strong>Imóvel:</strong> ${imovelNome} (ID: ${imovelId})</p>`
-       });
+       }).catch(e => console.log('[SMTP] Error sending admin alert', e));
 
        // Send technical sheet to client if email is provided
        if (email) {
@@ -677,34 +786,41 @@ async function startServer() {
                         <p>Atenciosamente,</p>
                         <p><strong>Equipe SS Imóveis</strong></p>
                       </div>`
-           });
+           }).catch(e => console.log('[SMTP] Error sending client interest detail', e));
        }
 
-       res.json({ success: true });
+       res.json({ success: true, data: newLead });
     } catch(err: any) {
-       console.error('[Email] Erro ao enviar email de lead', err);
-       res.status(500).json({ error: 'Erro ao notificar' });
+       console.error('[Email] Erro ao registrar interesse', err);
+       res.status(500).json({ error: 'Erro ao registrar interesse e notificar' });
     }
   });
 
-  app.post('/api/properties', upload.array('images', 10), async (req, res) => {
+  app.get('/api/imagens-disponiveis', async (req, res) => {
     try {
-      const { nome, valor, localizacao, descricao, tipo } = req.body;
-      const files = req.files as Express.Multer.File[];
-      
-      // Process and compress images
-      const dir = path.join(process.cwd(), 'public', 'media');
-      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      const dirPath = path.join(process.cwd(), 'public', 'assets', 'imoveis');
+      if (!fs.existsSync(dirPath)) {
+        // Return empty if it doesn't exist yet
+        return res.json([]);
+      }
+      const files = fs.readdirSync(dirPath);
+      // Filter out hidden files or non-images if necessary
+      const imageFiles = files
+        .filter(f => !f.startsWith('.') && /\.(png|jpe?g|gif|webp)$/i.test(f));
+      res.json(imageFiles);
+    } catch (err: any) {
+      console.error('[Imagens] Erro ao listar imagens', err);
+      res.status(500).json({ error: 'Erro ao listar imagens' });
+    }
+  });
+
+  app.post('/api/properties', upload.any(), async (req, res) => {
+    try {
+      const { nome, valor, localizacao, descricao, tipo, imagemSelecionada } = req.body;
       
       const imageUrls: string[] = [];
-      if (files && files.length > 0) {
-         for (const file of files) {
-            const ext = path.extname(file.originalname) || '.png';
-            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9) + ext;
-            const outPath = path.join(dir, uniqueSuffix);
-            fs.writeFileSync(outPath, file.buffer);
-            imageUrls.push(`/media/${uniqueSuffix}`);
-         }
+      if (imagemSelecionada) {
+         imageUrls.push(imagemSelecionada);
       }
       
       let finalDesc = (descricao || 'Sem descrição detalhada');
@@ -734,33 +850,16 @@ async function startServer() {
     }
   });
 
-  app.put('/api/properties/:id', upload.array('images', 10), async (req, res) => {
+  app.put('/api/properties/:id', upload.any(), async (req, res) => {
     try {
       const { id } = req.params;
-      const { nome, valor, localizacao, descricao, existingImages, tipo } = req.body;
+      const { nome, valor, localizacao, descricao, tipo, imagemSelecionada } = req.body;
+      
       let imageUrls: string[] = [];
-      
-      if (existingImages) {
-          try {
-            const parsedExisting = JSON.parse(existingImages);
-            imageUrls = Array.isArray(parsedExisting) ? parsedExisting : [parsedExisting];
-          } catch(e) {}
+      if (imagemSelecionada) {
+         imageUrls.push(imagemSelecionada);
       }
       
-      const files = req.files as Express.Multer.File[];
-      const dir = path.join(process.cwd(), 'public', 'media');
-      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-
-      if (files && files.length > 0) {
-          for (const file of files) {
-             const ext = path.extname(file.originalname) || '.png';
-             const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9) + ext;
-             const outPath = path.join(dir, uniqueSuffix);
-             fs.writeFileSync(outPath, file.buffer);
-             imageUrls.push(`/media/${uniqueSuffix}`);
-          }
-      }
-
       let finalDesc = descricao || '';
       if (tipo) {
          finalDesc += '|||TIPO:' + tipo;

@@ -371,7 +371,7 @@ export default function SimuladorMCMV() {
                     <div className="mt-8 bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
                       <h4 className="text-sm font-bold uppercase text-gray-500 mb-6 tracking-widest">Evolução do Saldo vs. Parcela ao longo dos anos</h4>
                       <div className="h-64 sm:h-80 w-full" style={{ minWidth: 0, minHeight: 0 }}>
-                        <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
+                        <ResponsiveContainer width="100%" height={280}>
                           <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                             <defs>
                               <linearGradient id="colorParcela" x1="0" y1="0" x2="0" y2="1">
