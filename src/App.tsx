@@ -749,7 +749,7 @@ export default function App() {
                     onClick={() => { setIsRegistering(!isRegistering); setLoginError(''); }}
                     className="text-blue-600 text-sm font-bold hover:underline"
                   >
-                    {isRegistering ? 'Já tenho uma conta. Fazer Login' : 'Não tem uma conta? Cadastre-se aqui'}
+                    {isRegistering ? 'Já tem uma conta? Fazer Login' : 'Não tem uma conta? Cadastre-se aqui'}
                   </button>
                 </div>
             )}
