@@ -96,9 +96,11 @@ const PropertyGallery = ({ images }: { images?: string[] }) => {
 
   if (imageList.length === 0 || hasError) {
     return (
-      <div className="w-full h-56 md:h-72 bg-slate-50 flex flex-col items-center justify-center text-slate-300 rounded-2xl border border-dashed border-slate-200">
-        <Home size={40} className="mb-2 text-slate-300 animate-pulse" />
-        <span className="text-xs font-semibold text-slate-400 uppercase tracking-widest">Imagem não disponível</span>
+      <div className="w-full h-56 md:h-72 bg-slate-50 flex flex-col items-center justify-center text-slate-300 rounded-2xl border border-dashed border-slate-200 relative overflow-hidden">
+        <img src="/banner.png" alt="Imagem não disponível" className="w-full h-full object-cover opacity-85" referrerPolicy="no-referrer" />
+        <div className="absolute inset-0 bg-slate-900/20 flex flex-col items-center justify-center">
+          <span className="text-white text-xs font-bold uppercase tracking-widest bg-slate-900/70 px-4 py-1.5 rounded-full backdrop-blur-[1px]">Imagem não disponível</span>
+        </div>
       </div>
     );
   }

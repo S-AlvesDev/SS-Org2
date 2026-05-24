@@ -38,7 +38,9 @@ import {
   Facebook,
   Instagram,
   Trash2,
-  UserCheck
+  UserCheck,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
@@ -49,6 +51,8 @@ import AlmoxarifadoView from './components/AlmoxarifadoView';
 import AdminComissoesPanel from './components/AdminComissoesPanel';
 import SimuladorMCMV from './components/SimuladorMCMV';
 import ImoveisInteressados from './components/ImoveisInteressados';
+import PrivacyPolicyModal from './components/PrivacyPolicyModal';
+import TermsOfUseModal from './components/TermsOfUseModal';
 
 import ControleClientes from './components/ControleClientes';
 
@@ -106,9 +110,11 @@ const PropertyGallery = ({ images, status }: { images?: string[], status: string
 
   if (imageList.length === 0 || hasError) {
     return (
-      <div className="w-full h-48 bg-gray-50 flex flex-col items-center justify-center text-gray-400 rounded-t-lg border-b border-gray-100">
-        <Home size={32} className="mb-2 text-blue-200" />
-        <span className="text-[10px] font-bold uppercase tracking-widest text-blue-300">Sem imagens</span>
+      <div className="w-full h-48 bg-gray-50 flex flex-col items-center justify-center text-gray-400 rounded-t-lg border-b border-gray-100 relative overflow-hidden">
+        <img src="/banner.png" alt="Sem imagens" className="w-full h-full object-cover opacity-80" referrerPolicy="no-referrer" />
+        <div className="absolute inset-0 bg-slate-900/30 flex items-center justify-center">
+          <span className="text-white text-[10px] font-bold uppercase tracking-widest bg-slate-900/60 px-3 py-1 rounded-full backdrop-blur-[1px]">Sem Imagens</span>
+        </div>
       </div>
     );
   }
@@ -199,6 +205,13 @@ export default function App() {
     localStorage.removeItem('token');
   };
   const [isVerifyingEmail, setIsVerifyingEmail] = useState(false);
+  const [showPwdLogin, setShowPwdLogin] = useState(false);
+  const [showPwdRegister, setShowPwdRegister] = useState(false);
+  const [showPwdRecovery, setShowPwdRecovery] = useState(false);
+  const [clientSearchQuery, setClientSearchQuery] = useState('');
+  const [agreedLGPD, setAgreedLGPD] = useState(false);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
   const [isRecovering, setIsRecovering] = useState(false);
   const [recoveryStep, setRecoveryStep] = useState(1);
   const [recoveryData, setRecoveryData] = useState({ email: '', code: '', newPassword: '' });
@@ -516,8 +529,17 @@ export default function App() {
                       }).catch(err => setLoginError(err.message));
                   }
                } else if (isRegistering) {
-                  if (isVerifyingEmail) handleRegister(e);
-                  else handleRequestCode(e);
+                  if (isVerifyingEmail) {
+                     handleRegister(e);
+                  } else {
+                     if (!agreedLGPD) {
+                        e.preventDefault();
+                        setLoginError('Você deve concordar com a Política de Privacidade e os Termos de Uso em conformidade com a LGPD.');
+                        toast.error('Por favor, aceite os Termos de Uso e Política de Privacidade para cadastrar.');
+                        return;
+                     }
+                     handleRequestCode(e);
+                  }
                } else {
                   handleLogin(e);
                }
@@ -559,11 +581,20 @@ export default function App() {
                      </div>
                      <div className="mt-4">
                        <label className="block text-sm font-semibold text-gray-700 mb-1">Nova Senha</label>
-                       <input 
-                         type="password" required
-                         className="w-full px-4 py-2 border border-gray-300 rounded-md outline-none"
-                         value={recoveryData.newPassword} onChange={e => setRecoveryData({...recoveryData, newPassword: e.target.value})}
-                       />
+                       <div className="relative">
+                         <input 
+                           type={showPwdRecovery ? "text" : "password"} required
+                           className="w-full pl-4 pr-10 py-2 border border-gray-300 rounded-md outline-none text-sm"
+                           value={recoveryData.newPassword} onChange={e => setRecoveryData({...recoveryData, newPassword: e.target.value})}
+                         />
+                         <button
+                           type="button"
+                           onClick={() => setShowPwdRecovery(!showPwdRecovery)}
+                           className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-650 transition-colors focus:outline-none"
+                         >
+                           {showPwdRecovery ? <EyeOff size={18} /> : <Eye size={18} />}
+                         </button>
+                       </div>
                      </div>
                    </>
                 )}
@@ -586,14 +617,23 @@ export default function App() {
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1">Senha</label>
-                  <input 
-                    type="password" 
-                    required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-                    placeholder="••••••••"
-                    value={loginForm.senha}
-                    onChange={e => setLoginForm({...loginForm, senha: e.target.value})}
-                  />
+                  <div className="relative">
+                    <input 
+                      type={showPwdLogin ? "text" : "password"} 
+                      required
+                      className="w-full pl-4 pr-10 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-sm"
+                      placeholder="••••••••"
+                      value={loginForm.senha}
+                      onChange={e => setLoginForm({...loginForm, senha: e.target.value})}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPwdLogin(!showPwdLogin)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors focus:outline-none"
+                    >
+                      {showPwdLogin ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
                 </div>
                 <div className="mt-2 text-right">
                    <button type="button" onClick={() => setIsRecovering(true)} className="text-xs text-blue-600 hover:underline">Esqueceu a senha?</button>
@@ -661,11 +701,34 @@ export default function App() {
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1">Senha</label>
+                  <div className="relative">
+                    <input 
+                      type={showPwdRegister ? "text" : "password"} required
+                      className="w-full pl-4 pr-10 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 transition-all outline-none text-sm"
+                      value={registerForm.senha} onChange={e => setRegisterForm({...registerForm, senha: e.target.value})}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPwdRegister(!showPwdRegister)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors focus:outline-none"
+                    >
+                      {showPwdRegister ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                </div>
+                
+                <div className="flex items-start space-x-2 pt-2">
                   <input 
-                    type="password" required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 transition-all outline-none"
-                    value={registerForm.senha} onChange={e => setRegisterForm({...registerForm, senha: e.target.value})}
+                    type="checkbox" 
+                    id="lgpd-checkbox" 
+                    required 
+                    checked={agreedLGPD}
+                    onChange={e => setAgreedLGPD(e.target.checked)}
+                    className="mt-1 h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 cursor-pointer"
                   />
+                  <label htmlFor="lgpd-checkbox" className="text-xs text-gray-600 leading-snug cursor-pointer select-none">
+                    Eu li e concordo com a <button type="button" onClick={() => setShowPrivacyModal(true)} className="font-semibold hover:underline" style={{ color: '#ff6900' }}>Política de privacidade</button> e os <button type="button" onClick={() => setShowTermsModal(true)} className="font-semibold hover:underline" style={{ color: '#ff6900' }}>Termos de uso</button> em conformidade com a LGPD (Lei Geral de Proteção de Dados Pessoais, Lei nº 13.709/2018).
+                  </label>
                 </div>
               </>
             )}
@@ -900,6 +963,10 @@ export default function App() {
           >
             <MessageCircle size={28} />
           </a>
+
+          {/* Privacy Policy and Terms of Use Modals under LGPD */}
+          <PrivacyPolicyModal isOpen={showPrivacyModal} onClose={() => setShowPrivacyModal(false)} />
+          <TermsOfUseModal isOpen={showTermsModal} onClose={() => setShowTermsModal(false)} />
         </main>
       </div>
     );
@@ -1311,36 +1378,91 @@ export default function App() {
                   </div>
 
                   <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+                    {/* Search block for name or email */}
+                    <div className="p-3 bg-gray-50 border-b border-gray-100 flex items-center justify-between gap-3">
+                      <div className="relative flex-1">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+                        <input
+                          type="text"
+                          placeholder="Pesquisar por nome ou e-mail..."
+                          value={clientSearchQuery}
+                          onChange={(e) => setClientSearchQuery(e.target.value)}
+                          className="w-full pl-8 pr-3 py-1.5 bg-white border border-gray-300 rounded text-xs focus:ring-1 focus:ring-blue-500 outline-none text-gray-800"
+                        />
+                      </div>
+                      <span className="text-[10px] font-bold text-gray-400 whitespace-nowrap bg-gray-200/50 px-2 py-0.5 rounded">
+                        {(data.clients || []).filter((cl: any) => {
+                          const q = clientSearchQuery.toLowerCase();
+                          return (cl.nome || '').toLowerCase().includes(q) || (cl.email || '').toLowerCase().includes(q);
+                        }).length} de {(data.clients || []).length}
+                      </span>
+                    </div>
+
                     <div className="overflow-y-auto max-h-[400px]">
                         <table className="w-full text-left text-sm">
-                            <thead className="sticky top-0 bg-gray-50 font-bold border-b text-gray-500">
+                            <thead className="sticky top-0 bg-gray-100 font-bold border-b text-gray-500 z-10">
                                 <tr>
-                                    <th className="px-4 py-2">ID</th>
-                                    <th className="px-4 py-2">Nome</th>
-                                    <th className="px-4 py-2 text-right">Ações</th>
+                                    <th className="px-4 py-2 text-xs">ID</th>
+                                    <th className="px-4 py-2 text-xs">Nome / E-mail</th>
+                                    <th className="px-4 py-2 text-right text-xs">Ações</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y">
-                                {data.clients.map((cl: any) => (
-                                    <tr key={cl.id} className="hover:bg-blue-50">
-                                        <td className="px-4 py-3">{cl.id}</td>
-                                        <td className="px-4 py-3 font-medium">{cl.nome}</td>
-                                        <td className="px-4 py-3 text-right">
-                                            <button 
-                                              onClick={() => setSelectedClient(cl)}
-                                              className="text-blue-600 bg-blue-50 px-2 py-1 rounded text-[10px] font-bold border border-blue-100 hover:bg-blue-100 transition-colors mr-2"
-                                            >
-                                              DETALHAR
-                                            </button>
-                                            <button 
-                                              onClick={() => {
-                                                 setContractForm(prev => ({...prev, clientId: String(cl.id)}));
-                                                 setView('contracts');
-                                              }}
-                                              className="text-green-600 bg-green-50 px-2 py-1 rounded text-[10px] font-bold border border-green-100 hover:bg-green-100 transition-colors"
-                                            >
-                                              VINCULAR IMÓVEL
-                                            </button>
+                            <tbody className="divide-y divide-gray-100">
+                                {(data.clients || [])
+                                  .filter((cl: any) => {
+                                    const q = clientSearchQuery.toLowerCase();
+                                    return (cl.nome || '').toLowerCase().includes(q) || (cl.email || '').toLowerCase().includes(q);
+                                  })
+                                  .map((cl: any) => (
+                                    <tr key={cl.id} className="hover:bg-blue-50/40 transition-colors">
+                                        <td className="px-4 py-3 text-xs font-mono text-gray-500">{cl.id}</td>
+                                        <td className="px-4 py-3">
+                                            <div className="font-bold text-gray-800 text-xs">{cl.nome}</div>
+                                            <div className="text-[10px] text-gray-400 font-medium">{cl.email || 'Sem e-mail'}</div>
+                                        </td>
+                                        <td className="px-4 py-3 text-right whitespace-nowrap">
+                                            <div className="inline-flex items-center gap-1.5">
+                                              <button 
+                                                onClick={() => setSelectedClient(cl)}
+                                                className="text-blue-600 bg-blue-50 px-2 py-1 rounded text-[10px] font-bold border border-blue-100 hover:bg-blue-100 transition-all"
+                                              >
+                                                DETALHAR
+                                              </button>
+                                              <button 
+                                                onClick={() => {
+                                                   setContractForm(prev => ({...prev, clientId: String(cl.id)}));
+                                                   setView('contracts');
+                                                }}
+                                                className="text-green-600 bg-green-50 px-2 py-1 rounded text-[10px] font-bold border border-green-100 hover:bg-green-100 transition-all"
+                                              >
+                                                VINCULAR IMÓVEL
+                                              </button>
+                                              {/* Show DELETE action ONLY if user is administrativel role */}
+                                              {(user?.role === 'ADMINISTRATIVO' || user?.role === 'ADMINISTRADOR') && (
+                                                <button 
+                                                  onClick={async () => {
+                                                    if (window.confirm(`Tem certeza que deseja remover o cliente "${cl.nome}" do sistema de forma permanente? Esta ação removerá também todos os seus registros vinculados.`)) {
+                                                      try {
+                                                        const res = await fetch(`/api/clients/${cl.id}`, { method: 'DELETE' });
+                                                        if (res.ok) {
+                                                          toast.success('Cliente removido com sucesso!');
+                                                          loadApplicationData();
+                                                        } else {
+                                                          const errBody = await res.json();
+                                                          toast.error('Erro ao remover: ' + (errBody.error || errBody.details || 'Erro desconhecido'));
+                                                        }
+                                                      } catch (e) {
+                                                        toast.error('Erro de conexão com o servidor.');
+                                                      }
+                                                    }
+                                                  }}
+                                                  className="text-red-650 bg-red-50 px-2 py-1 rounded text-[10px] font-bold border border-red-100 hover:bg-red-100 transition-all"
+                                                  title="Excluir Cliente"
+                                                >
+                                                  APAGAR
+                                                </button>
+                                              )}
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}
@@ -2304,6 +2426,10 @@ export default function App() {
               </>
             )}
           </AnimatePresence>
+
+          {/* Privacy Policy and Terms of Use Modals under LGPD */}
+          <PrivacyPolicyModal isOpen={showPrivacyModal} onClose={() => setShowPrivacyModal(false)} />
+          <TermsOfUseModal isOpen={showTermsModal} onClose={() => setShowTermsModal(false)} />
         </div>
       </main>
     </div>

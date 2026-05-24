@@ -598,6 +598,40 @@ async function startServer() {
     res.json(client);
   });
 
+  app.delete('/api/clients/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+      // Find the client to get their matricula
+      const { data: client, error: findError } = await supabaseServer
+        .from('clients')
+        .select('matricula')
+        .eq('id', Number(id))
+        .maybeSingle();
+
+      if (findError) {
+        return res.status(500).json({ error: 'Erro ao localizar cliente para exclusão' });
+      }
+
+      // If they have a matricula, delete from users
+      if (client?.matricula) {
+        await supabaseServer.from('users').delete().eq('matricula', client.matricula);
+      }
+
+      const { error: deleteError } = await supabaseServer
+        .from('clients')
+        .delete()
+        .eq('id', Number(id));
+
+      if (deleteError) {
+        return res.status(500).json({ error: 'Erro ao excluir o cliente da tabela clients: ' + deleteError.message });
+      }
+
+      res.json({ success: true, message: 'Cliente e credenciais removidos' });
+    } catch (err: any) {
+      res.status(500).json({ error: 'Erro interno ao excluir cliente: ' + err.message });
+    }
+  });
+
   app.get('/api/contracts/:id/cancellation-summary', async (req, res) => {
     const { id } = req.params;
     const { data: contractRaw, error } = await supabaseServer.from('contracts').select('*').eq('id', Number(id)).maybeSingle();
